@@ -320,7 +320,15 @@
           <li>Microsoft PowerPoint — présentations percutantes</li>
           <li>Impression & numérisation — utilisation d'imprimantes et scanners</li>
         </ul>
-        <a class="btn primary" href="tel:+23566242811">S'inscrire maintenant</a>
+        <form id="reservation-form" class="contact-form" style="margin-top:16px;">
+  <input type="hidden" name="formation" value="Formation Bureautique intensive">
+  <input type="text" name="nom" placeholder="Votre nom" required>
+  <input type="tel" name="telephone" placeholder="Votre téléphone" required>
+  <input type="email" name="email" placeholder="Votre email (optionnel)">
+  <button type="submit" class="btn primary">S'inscrire maintenant</button>
+</form>
+<p id="reservation-status"></p>
+<a class="btn ghost" href="tel:+23566242811" style="margin-top:8px;display:inline-block;">Ou appeler directement</a>
       </div>
       <div class="promo-card">
         <div class="row"><span>Durée</span><span>2 semaines intensives</span></div>
@@ -437,6 +445,27 @@ appId: "1:751340463760:web:a74c473a0aac634f57da15"
       console.error(err);
     }
   });
+  const reservationForm = document.getElementById("reservation-form");
+const reservationStatus = document.getElementById("reservation-status");
+
+reservationForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  reservationStatus.textContent = "Envoi en cours...";
+  try {
+    await addDoc(collection(db, "reservations"), {
+      formation: reservationForm.formation.value,
+      nom: reservationForm.nom.value,
+      telephone: reservationForm.telephone.value,
+      email: reservationForm.email.value,
+      createdAt: serverTimestamp()
+    });
+    reservationStatus.textContent = "Merci ! Votre inscription a bien été enregistrée.";
+    reservationForm.reset();
+  } catch (err) {
+    reservationStatus.textContent = "Erreur lors de l'envoi, réessayez.";
+    console.error(err);
+  }
+});
 </script>
 <footer>
   <div class="wrap">
