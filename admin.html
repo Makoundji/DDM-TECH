@@ -1,1 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Admin — DDM TECH</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0b1f3a;color:#fff;min-height:100vh;}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 20px;}
+  h1{font-size:22px;margin-bottom:24px;}
 
+  /* Login */
+  #login-box{max-width:360px;margin:80px auto;background:rgba(255,255,255,0.05);padding:28px;border-radius:14px;}
+  #login-box input{width:100%;padding:10px 12px;margin-bottom:12px;border-radius:8px;border:1px solid #2a3f5f;font-size:15px;}
+  #login-box button{width:100%;padding:10px;border:none;border-radius:8px;background:#ff7a1a;color:#fff;font-weight:600;cursor:pointer;}
+  #login-error{color:#ff8080;font-size:13px;margin-top:8px;}
+
+  /* Admin panel */
+  #admin-panel{display:none;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+  #logout-btn{background:none;border:1px solid #2a3f5f;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;}
+
+  .tabs{display:flex;gap:10px;margin-bottom:20px;}
+  .tab-btn{padding:10px 18px;border-radius:8px;border:1px solid #2a3f5f;background:transparent;color:#fff;cursor:pointer;font-size:14px;}
+  .tab-btn.active{background:#ff7a1a;border-color:#ff7a1a;font-weight:600;}
+
+  .entry{background:rgba(255,255,255,0.05);border-radius:10px;padding:16px;margin-bottom:12px;}
+  .entry .row{display:flex;gap:8px;font-size:14px;margin-bottom:4px;}
+  .entry .label{color:#7f90ab;min-width:90px;}
+  .empty{color:#7f90ab;padding:20px 0;}
+</style>
+</head>
+<body>
+
+<div id="login-box">
+  <h1>Connexion Admin</h1>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Mot de passe">
+  <button id="login-btn">Se connecter</button>
+  <div id="login-error"></div>
+</div>
+
+<div class="wrap" id="admin-panel">
+  <div class="topbar">
+    <h1>Espace Admin — DDM TECH</h1>
+    <button id="logout-btn">Déconnexion</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="contacts">Contacts / Devis</button>
+    <button class="tab-btn" data-tab="reservations">Réservations formation</button>
+  </div>
+
+  <div id="contacts-list"></div>
+  <div id="reservations-list" style="display:none;"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAgg7ov5jLXtHDQmbKxYodxYqTF--ld8A8",
+    authDomain: "ddm-tech-10af3.firebaseapp.com",
+    projectId: "ddm-tech-10af3",
+    storageBucket: "ddm-tech-10af3.firebasestorage.app",
+    messagingSenderId: "751340463760",
+    appId: "1:751340463760:web:a74c473a0aac634f57da15"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const loginBox = document.getElementById("login-box");
+  const adminPanel = document.getElementById("admin-panel");
+  const loginError = document.getElementById("login-error");
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      loginError.textContent = "Email ou mot de passe incorrect.";
+    }
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginBox.style.display = "none";
+      adminPanel.style.display = "block";
+      loadContacts();
+      loadReservations();
+    } else {
+      loginBox.style.display = "block";
+      adminPanel.style.display = "none";
+    }
+  });
+
+  async function loadContacts() {
+    const container = document.getElementById("contacts-list");
+    container.innerHTML = "Chargement...";
+    const snap = await getDocs(query(collection(db, "contacts"), orderBy("createdAt", "desc")));
+    if (snap.empty) { container.innerHTML = '<div class="empty">Aucune demande pour le moment.</div>'; return; }
+    container.innerHTML = "";
+    snap.forEach(doc => {
+      const d = doc.data();
+      container.innerHTML += `
+        <div class="entry">
+          <div class="row"><span class="label">Nom</span>${d.nom || ""}</div>
+          <div class="row"><span class="label">Email</span>${d.email || ""}</div>
+          <div class="row"><span class="label">Téléphone</span>${d.telephone || ""}</div>
+          <div class="row"><span class="label">Message</span>${d.message || ""}</div>
+        </div>`;
+    });
+  }
+
+  async function loadReservations() {
+    const container = document.getElementById("reservations-list");
+    container.innerHTML = "Chargement...";
+    const snap = await getDocs(query(collection(db, "reservations"), orderBy("createdAt", "desc")));
+    if (snap.empty) { container.innerHTML = '<div class="empty">Aucune inscription pour le moment.</div>'; return; }
+    container.innerHTML = "";
+    snap.forEach(doc => {
+      const d = doc.data();
+      container.innerHTML += `
+        <div class="entry">
+          <div class="row"><span class="label">Formation</span>${d.formation || ""}</div>
+          <div class="row"><span class="label">Nom</span>${d.nom || ""}</div>
+          <div class="row"><span class="label">Téléphone</span>${d.telephone || ""}</div>
+          <div class="row"><span class="label">Email</span>${d.email || ""}</div>
+        </div>`;
+    });
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tab = btn.dataset.tab;
+      document.getElementById("contacts-list").style.display = tab === "contacts" ? "block" : "none";
+      document.getElementById("reservations-list").style.display = tab === "reservations" ? "block" : "none";
+    });
+  });
+</script>
+</body>
+</html>
