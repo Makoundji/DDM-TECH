@@ -194,6 +194,12 @@
     background:#081428; color:#7f90ab; padding:28px 0; text-align:center; font-size:12.5px;
   }
   footer strong{color:#c7d3e6;}
+  .contact-form{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+.contact-form input, .contact-form textarea{
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+  font-family:var(--sans);font-size:15px;
+}
+#form-status{margin-top:10px;font-size:14px;color:var(--text-dim);}
 </style>
 </head>
 <body>
@@ -381,14 +387,58 @@
         </ul>
       </div>
       <div class="contact-card">
-        <h4>Contact rapide</h4>
-        <a class="btn primary" href="mailto:ddmtech2025@gmail.com">Envoyer un email</a>
-        <a class="btn ghost" href="tel:+23566242811">Appeler DDM TECH</a>
-      </div>
+  <h4>Envoyer une demande</h4>
+  <form id="contact-form" class="contact-form">
+    <input type="text" name="nom" placeholder="Votre nom" required>
+    <input type="email" name="email" placeholder="Votre email" required>
+    <input type="tel" name="telephone" placeholder="Votre téléphone" required>
+    <textarea name="message" placeholder="Votre message / demande de devis" required rows="4"></textarea>
+    <button type="submit" class="btn primary">Envoyer la demande</button>
+  </form>
+  <p id="form-status"></p>
+  <a class="btn ghost" href="tel:+23566242811" style="margin-top:12px;display:inline-block;">Ou appeler directement</a>
+</div>
     </div>
   </div>
 </section>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+  const firebaseConfig = {
+    apiKey: "COLLE_ICI_TA_VALEUR",
+    authDomain: "COLLE_ICI_TA_VALEUR",
+    projectId: "COLLE_ICI_TA_VALEUR",
+    storageBucket: "COLLE_ICI_TA_VALEUR",
+    messagingSenderId: "COLLE_ICI_TA_VALEUR",
+    appId: "COLLE_ICI_TA_VALEUR"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const form = document.getElementById("contact-form");
+  const status = document.getElementById("form-status");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    status.textContent = "Envoi en cours...";
+    try {
+      await addDoc(collection(db, "contacts"), {
+        nom: form.nom.value,
+        email: form.email.value,
+        telephone: form.telephone.value,
+        message: form.message.value,
+        createdAt: serverTimestamp()
+      });
+      status.textContent = "Merci ! Votre demande a bien été envoyée.";
+      form.reset();
+    } catch (err) {
+      status.textContent = "Erreur lors de l'envoi, réessayez.";
+      console.error(err);
+    }
+  });
+</script>
 <footer>
   <div class="wrap">
     <strong>DDM TECH</strong> — Votre partenaire numérique de confiance · Moursal, derrière HCR, N'Djamena, Tchad
